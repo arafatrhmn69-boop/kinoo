@@ -1,7 +1,7 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { ensureDatabase } from "@/db/bootstrap";
-import { cartItems, orderItems, orders } from "@/db/schema";
+import { adminActivities, cartItems, orderItems, orders, products, promos } from "@/db/schema";
 import { getCart } from "@/lib/cart";
 import {
   STORE,
@@ -127,7 +127,23 @@ export async function createOrder(sessionId: string, payload: CheckoutPayload) {
   }
 
   const subtotal = cart.subtotal;
-  const discount = discountFor(subtotal, customer.promoCode);
+  let discount = discountFor(subtotal, customer.promoCode);
+  if (customer.promoCode) {
+    const [promoRow] = await db
+      .select()
+      .from(promos)
+      .where(eq(promos.code, customer.promoCode))
+      .limit(1);
+    if (promoRow && promoRow.active && subtotal >= promoRow.minOrder) {
+      const rawDiscount =
+        promoRow.discountType === "fixed"
+          ? promoRow.discountValue
+          : Math.round((subtotal * promoRow.discountValue) / 100);
+      discount = promoRow.maxDiscount ? Math.min(rawDiscount, promoRow.maxDiscount) : rawDiscount;
+    } else if (promoRow && (!promoRow.active || subtotal < promoRow.minOrder)) {
+      discount = 0;
+    }
+  }
   const deliveryFee = deliveryFeeFor(subtotal);
   const total = Math.max(subtotal - discount + deliveryFee, 0);
   const orderNumber = buildOrderNumber();
@@ -144,7 +160,7 @@ export async function createOrder(sessionId: string, payload: CheckoutPayload) {
         note: customer.note,
         paymentMethod: customer.paymentMethod,
         paymentNumber: customer.paymentNumber,
-        promoCode: customer.promoCode,
+        promoCode: discount > 0 ? customer.promoCode : "",
         subtotal,
         discount,
         deliveryFee,
@@ -165,6 +181,29 @@ export async function createOrder(sessionId: string, payload: CheckoutPayload) {
         lineTotal: item.lineTotal,
       })),
     );
+
+    for (const item of cart.items) {
+      await tx
+        .update(products)
+        .set({
+          stockQty: sql`greatest(${products.stockQty} - ${item.quantity}, 0)`,
+        })
+        .where(eq(products.id, item.productId));
+    }
+
+    if (discount > 0 && customer.promoCode) {
+      await tx
+        .update(promos)
+        .set({ usageCount: sql`${promos.usageCount} + 1` })
+        .where(eq(promos.code, customer.promoCode));
+    }
+
+    await tx.insert(adminActivities).values({
+      actor: customer.customerName,
+      action: `Placed new ${customer.paymentMethod.toUpperCase()} order (${cart.count} items) in ${customer.area}`,
+      target: orderNumber,
+      category: "order",
+    });
 
     await tx.delete(cartItems).where(eq(cartItems.sessionId, sessionId));
 

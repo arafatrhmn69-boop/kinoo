@@ -35,7 +35,7 @@ const PAYMENT_TAGS: Record<string, string> = {
 
 export function CheckoutView() {
   const router = useRouter();
-  const { cart, ready, promo, area, setArea, refresh, clearPromo } = useKinoo();
+  const { cart, ready, promo, promoDiscount, area, setArea, refresh, clearPromo } = useKinoo();
   const [form, setForm] = useState<FormState>({
     customerName: "",
     phone: "",
@@ -53,7 +53,7 @@ export function CheckoutView() {
   }, [area]);
 
   const subtotal = cart.subtotal;
-  const discount = discountFor(subtotal, promo);
+  const discount = promoDiscount || discountFor(subtotal, promo);
   const delivery = deliveryFeeFor(subtotal);
   const total = Math.max(subtotal - discount + delivery, 0);
 

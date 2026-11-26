@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { CartProvider } from "@/components/cart-provider";
-import { CartDrawer } from "@/components/cart-drawer";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { StoreShell } from "@/components/store-shell";
 import "./globals.css";
+import "./admin/admin.css";
 
 export const metadata: Metadata = {
   title: "Kinoo — Fresh groceries delivered across Dhaka",
@@ -44,12 +42,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
-        <CartProvider>
-          <SiteHeader />
-          <main>{children}</main>
-          <SiteFooter />
-          <CartDrawer />
-        </CartProvider>
+        <StoreShell>{children}</StoreShell>
       </body>
     </html>
   );

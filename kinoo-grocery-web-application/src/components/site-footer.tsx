@@ -44,9 +44,11 @@ export function SiteFooter() {
               <li>
                 <Link href="/checkout">Checkout</Link>
               </li>
+              <li>
+                <Link href="/admin">Admin Studio</Link>
+              </li>
               <li>Delivery areas</li>
               <li>Returns &amp; refunds</li>
-              <li>Privacy policy</li>
             </ul>
           </div>
 

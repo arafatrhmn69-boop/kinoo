@@ -18,6 +18,7 @@ export function CartDrawer() {
     closeCart,
     busy,
     promo,
+    promoDiscount,
     applyPromo,
     clearPromo,
     increment,
@@ -32,7 +33,7 @@ export function CartDrawer() {
     setCode(promo);
   }, [promo]);
 
-  const discount = discountFor(cart.subtotal, promo);
+  const discount = promoDiscount || discountFor(cart.subtotal, promo);
   const delivery = deliveryFeeFor(cart.subtotal);
   const total = Math.max(cart.subtotal - discount + delivery, 0);
   const remaining = Math.max(STORE.freeDeliveryThreshold - cart.subtotal, 0);
@@ -146,7 +147,7 @@ export function CartDrawer() {
                   Remove
                 </button>
               ) : (
-                <button type="button" onClick={() => applyPromo(code)}>
+                <button type="button" onClick={() => void applyPromo(code)}>
                   Apply
                 </button>
               )}
