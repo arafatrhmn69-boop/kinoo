@@ -1,8 +1,8 @@
 # Kinoo — fresh grocery storefront (Dhaka)
 
-Kinoo is a complete, customer-facing grocery e-commerce storefront inspired by Meena Bazar.
+Kinoo is a complete grocery e-commerce storefront and executive **Admin Studio** inspired by Meena Bazar.
 It ships with a live AJAX search, category filtering, a slide-out cart, promo codes, a cash-on-delivery /
-bKash / Nagad checkout and a saved order receipt. There is **no admin panel**.
+bKash / Nagad checkout, saved order receipts, and a full operations command center at `/admin` (live dispatch board, inventory & catalog CRUD, aisle management, promo campaigns, Dhaka household CRM, and store settings).
 
 > **Stack note for this sandbox.** The brief asked for PHP + SQLite. This runtime only serves
 > Node.js/Next.js with PostgreSQL, so the same architecture was implemented with Next.js App Router

@@ -20,8 +20,10 @@ function toDto(row: ProductRow): ProductDto {
     description: row.description,
     badge: row.badge,
     rating: row.rating,
-    inStock: row.inStock,
+    inStock: row.inStock && row.stockQty > 0,
+    stockQty: row.stockQty,
     isDeal: row.isDeal,
+    sortOrder: row.sortOrder,
   };
 }
 
@@ -29,17 +31,19 @@ export async function getCategories(): Promise<CategoryDto[]> {
   await ensureDatabase();
   const rows = await db
     .select({
+      id: categories.id,
       slug: categories.slug,
       name: categories.name,
       blurb: categories.blurb,
       icon: categories.icon,
+      sortOrder: categories.sortOrder,
       count: sql<number>`(
         select count(*)::int from ${products}
         where ${products.categorySlug} = ${categories.slug}
       )`,
     })
     .from(categories)
-    .orderBy(asc(categories.sortOrder));
+    .orderBy(asc(categories.sortOrder), asc(categories.id));
 
   return rows.map((row) => ({ ...row, count: Number(row.count) }));
 }

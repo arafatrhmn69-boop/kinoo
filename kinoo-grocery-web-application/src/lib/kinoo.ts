@@ -42,14 +42,18 @@ export type ProductDto = {
   badge: string | null;
   rating: number;
   inStock: boolean;
+  stockQty?: number;
   isDeal: boolean;
+  sortOrder?: number;
 };
 
 export type CategoryDto = {
+  id?: number;
   slug: string;
   name: string;
   blurb: string;
   icon: string;
+  sortOrder?: number;
   count: number;
 };
 

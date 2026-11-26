@@ -10,8 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 /**
- * Kinoo catalog + commerce schema.
- * The storefront is customer facing only (no admin tables).
+ * Kinoo catalog + commerce + admin operations schema.
  */
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
@@ -36,6 +35,7 @@ export const products = pgTable("products", {
   badge: text("badge"),
   rating: real("rating").notNull().default(4.6),
   inStock: boolean("in_stock").notNull().default(true),
+  stockQty: integer("stock_qty").notNull().default(45),
   isDeal: boolean("is_deal").notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),
 });
@@ -56,6 +56,8 @@ export const orders = pgTable("orders", {
   deliveryFee: integer("delivery_fee").notNull().default(0),
   total: integer("total").notNull(),
   status: text("status").notNull().default("confirmed"),
+  riderName: text("rider_name").notNull().default(""),
+  adminNote: text("admin_note").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -84,3 +86,31 @@ export const cartItems = pgTable(
   },
   (table) => [uniqueIndex("cart_items_session_product_idx").on(table.sessionId, table.productId)],
 );
+
+export const promos = pgTable("promos", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  title: text("title").notNull(),
+  discountType: text("discount_type").notNull().default("percent"), // 'percent' | 'fixed'
+  discountValue: integer("discount_value").notNull().default(10),
+  minOrder: integer("min_order").notNull().default(0),
+  maxDiscount: integer("max_discount"),
+  active: boolean("active").notNull().default(true),
+  usageCount: integer("usage_count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const storeSettings = pgTable("store_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const adminActivities = pgTable("admin_activities", {
+  id: serial("id").primaryKey(),
+  actor: text("actor").notNull().default("Arafat Rahman"),
+  action: text("action").notNull(),
+  target: text("target").notNull().default(""),
+  category: text("category").notNull().default("system"), // 'order' | 'product' | 'category' | 'promo' | 'settings'
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

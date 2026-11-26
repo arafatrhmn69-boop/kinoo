@@ -90,10 +90,14 @@ export function SiteHeader() {
               <i className="bi bi-headset" aria-hidden="true" />
               {STORE.hotline}
             </a>
-            <span className="topbar-item">
+            <span className="topbar-item hide-sm">
               <i className="bi bi-shield-check" aria-hidden="true" />
               100% fresh guarantee
             </span>
+            <Link className="topbar-item topbar-admin-pill" href="/admin">
+              <i className="bi bi-grid-1x2-fill" aria-hidden="true" />
+              Admin Studio
+            </Link>
           </div>
         </div>
       </div>

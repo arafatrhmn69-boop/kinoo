@@ -26,6 +26,7 @@ export type SeedProduct = {
   badge: string | null;
   rating: number;
   inStock: boolean;
+  stockQty: number;
   isDeal: boolean;
   sortOrder: number;
 };
@@ -611,6 +612,11 @@ const rows: Row[] = [
   ],
 ];
 
+const SEED_STOCK_LEVELS = [
+  64, 52, 78, 14, 48, 36, 40, 29, 7, 19, 8, 44, 11, 22, 92, 85, 60, 47, 55, 73, 110, 38, 120, 66,
+  34, 25, 18, 84, 96, 42, 58, 70, 39, 51, 28, 63, 33,
+];
+
 export const seedProducts: SeedProduct[] = rows.map((row, index) => ({
   slug: row[0],
   name: row[1],
@@ -624,6 +630,7 @@ export const seedProducts: SeedProduct[] = rows.map((row, index) => ({
   badge: row[9],
   rating: row[10],
   inStock: true,
+  stockQty: SEED_STOCK_LEVELS[index % SEED_STOCK_LEVELS.length] ?? 45,
   isDeal: row[11],
   sortOrder: index + 1,
 }));
@@ -642,6 +649,7 @@ seedProducts.push({
   badge: null,
   rating: 4.4,
   inStock: true,
+  stockQty: 54,
   isDeal: false,
   sortOrder: seedProducts.length + 1,
 });

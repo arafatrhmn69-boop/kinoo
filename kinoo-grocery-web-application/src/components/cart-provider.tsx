@@ -14,6 +14,14 @@ import { EMPTY_CART, STORE, normalisePromo, type CartDto } from "@/lib/kinoo";
 
 type ToastItem = { id: number; message: string };
 
+type PromoMeta = {
+  code: string;
+  discountType: string;
+  discountValue: number;
+  minOrder: number;
+  maxDiscount: number | null;
+};
+
 type CartContextValue = {
   cart: CartDto;
   ready: boolean;
@@ -21,6 +29,7 @@ type CartContextValue = {
   isOpen: boolean;
   area: string;
   promo: string;
+  promoDiscount: number;
   openCart: () => void;
   closeCart: () => void;
   refresh: () => Promise<void>;
@@ -28,7 +37,7 @@ type CartContextValue = {
   increment: (productId: number) => Promise<void>;
   decrement: (productId: number) => Promise<void>;
   removeItem: (productId: number) => Promise<void>;
-  applyPromo: (code: string) => boolean;
+  applyPromo: (code: string) => Promise<boolean>;
   clearPromo: () => void;
   setArea: (area: string) => void;
   notify: (message: string) => void;
@@ -48,6 +57,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [area, setAreaState] = useState<string>(STORE.areas[0]);
   const [promo, setPromoState] = useState("");
+  const [promoMeta, setPromoMeta] = useState<PromoMeta | null>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastId = useRef(0);
 
@@ -164,32 +174,87 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const applyPromo = useCallback(
-    (code: string) => {
+    async (code: string) => {
       const next = normalisePromo(code);
-      if (next !== STORE.promoCode) {
-        notify("That promo code is not valid.");
+      if (!next) {
+        notify("Enter a promo code first.");
         return false;
       }
-      setPromoState(next);
       try {
-        window.localStorage.setItem("kinoo_promo", next);
+        const res = await fetch(
+          `/api/promos/validate?code=${encodeURIComponent(next)}&subtotal=${cart.subtotal}`,
+          { cache: "no-store" },
+        );
+        const data = (await res.json()) as {
+          ok: boolean;
+          error?: string;
+          promo?: PromoMeta & { title: string; discount: number };
+        };
+        if (!res.ok || !data.ok || !data.promo) {
+          notify(data.error ?? "That promo code is not valid.");
+          return false;
+        }
+        setPromoState(data.promo.code);
+        setPromoMeta({
+          code: data.promo.code,
+          discountType: data.promo.discountType,
+          discountValue: data.promo.discountValue,
+          minOrder: data.promo.minOrder,
+          maxDiscount: data.promo.maxDiscount,
+        });
+        try {
+          window.localStorage.setItem("kinoo_promo", data.promo.code);
+        } catch {
+          /* ignore */
+        }
+        const label =
+          data.promo.discountType === "fixed"
+            ? `৳${data.promo.discountValue} off`
+            : `${data.promo.discountValue}% off`;
+        notify(`Promo ${data.promo.code} applied — ${label}!`);
+        return true;
       } catch {
-        /* ignore */
+        if (next === STORE.promoCode) {
+          setPromoState(next);
+          setPromoMeta({
+            code: next,
+            discountType: "percent",
+            discountValue: 10,
+            minOrder: 0,
+            maxDiscount: null,
+          });
+          notify(`Promo ${STORE.promoCode} applied — 10% off!`);
+          return true;
+        }
+        notify("Could not validate promo code.");
+        return false;
       }
-      notify(`Promo ${STORE.promoCode} applied — 10% off!`);
-      return true;
     },
-    [notify],
+    [cart.subtotal, notify],
   );
 
   const clearPromo = useCallback(() => {
     setPromoState("");
+    setPromoMeta(null);
     try {
       window.localStorage.removeItem("kinoo_promo");
     } catch {
       /* ignore */
     }
   }, []);
+
+  const promoDiscount = useMemo(() => {
+    if (!promo || cart.subtotal <= 0) return 0;
+    if (promoMeta && promoMeta.code === promo) {
+      if (cart.subtotal < promoMeta.minOrder) return 0;
+      const raw =
+        promoMeta.discountType === "fixed"
+          ? promoMeta.discountValue
+          : Math.round((cart.subtotal * promoMeta.discountValue) / 100);
+      return promoMeta.maxDiscount ? Math.min(raw, promoMeta.maxDiscount) : raw;
+    }
+    return promo === STORE.promoCode ? Math.round(cart.subtotal * STORE.promoRate) : 0;
+  }, [cart.subtotal, promo, promoMeta]);
 
   const setArea = useCallback(
     (next: string) => {
@@ -215,6 +280,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       isOpen,
       area,
       promo,
+      promoDiscount,
       openCart,
       closeCart,
       refresh,
@@ -234,6 +300,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       isOpen,
       area,
       promo,
+      promoDiscount,
       openCart,
       closeCart,
       refresh,
