@@ -71,7 +71,7 @@ public/favicon.svg
 - Cart is stored server-side in PostgreSQL keyed by an httpOnly `kinoo_cart` cookie, so the price
   totals on the receipt always come from the database, never from the browser.
 
-## PHP → Next.js map
+## PHP → Next.js map 
 
 | Brief (PHP)              | This build                                          |
 | ------------------------ | --------------------------------------------------- |
